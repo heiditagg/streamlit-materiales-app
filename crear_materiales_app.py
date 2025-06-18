@@ -1,7 +1,7 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import date
+import io  # <-- Aquí va el import, sin sangría
 
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
 
@@ -50,17 +50,15 @@ if st.session_state.materiales:
     df = pd.DataFrame(st.session_state.materiales)
     st.dataframe(df, use_container_width=True)
 
-  import io
+    # Crear archivo en memoria para descargar
+    output = io.BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
 
-# Crear archivo en memoria para descargar
-output = io.BytesIO()
-df.to_excel(output, index=False, engine='openpyxl')
-output.seek(0)
-
-# Botón de descarga
-st.download_button(
-    label="📥 Descargar archivo Excel",
-    data=output,
-    file_name="material_creado.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+    # Botón de descarga
+    st.download_button(
+        label="📥 Descargar archivo Excel",
+        data=output,
+        file_name="material_creado.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
