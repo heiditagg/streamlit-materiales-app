@@ -50,10 +50,17 @@ if st.session_state.materiales:
     df = pd.DataFrame(st.session_state.materiales)
     st.dataframe(df, use_container_width=True)
 
-    # Botón para descargar como Excel
-    st.download_button(
-        label="📥 Descargar Excel",
-        data=df.to_excel(index=False, engine='openpyxl'),
-        file_name="materiales_registrados.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+  import io
+
+# Crear archivo en memoria para descargar
+output = io.BytesIO()
+df.to_excel(output, index=False, engine='openpyxl')
+output.seek(0)
+
+# Botón de descarga
+st.download_button(
+    label="📥 Descargar archivo Excel",
+    data=output,
+    file_name="material_creado.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
