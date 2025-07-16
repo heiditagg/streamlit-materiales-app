@@ -4,21 +4,29 @@ from datetime import date
 import io
 import streamlit_authenticator as stauth
 
-# ---- CONFIGURACIÓN DE USUARIOS ----
+# --- SEGURIDAD: Configura usuarios y contraseñas (HASHED) ---
 names = ['Heidi Guevara', 'Usuario Demo']
 usernames = ['heidi', 'demo']
-passwords = ['miclaveSegura1', 'demopass']
+# Contraseñas originales: miclaveSegura1, demopass
+hashed_passwords = [
+    '$2b$12$5fzpyOj0oSjs3Q1RHywOjeYzck/gQ6keP0XZxIpPa.mqFByfRxy5y',  # miclaveSegura1
+    '$2b$12$ve4SxNKeP4NEZTTkQuyQruYXG5r9J8.MXHnFA.LTkPvXTSqVnmIUa'   # demopass
+]
 
-hashed_passwords = stauth.Hasher(passwords).generate()
+authenticator = stauth.Authenticate(names, usernames, hashed_passwords,
+                                    "materiales_app", "abcdef", cookie_expiry_days=1)
 
-authenticator = stauth.Authenticate(
-    names, usernames, hashed_passwords,
-    'materiales_app', 'abcdef', cookie_expiry_days=1
-)
+name, authentication_status, username = authenticator.login('main', fields={'Form name':'Login'})
 
-name, authentication_status, username = authenticator.login('🔒 Login', 'main')
-
+if authentication_status == False:
+    st.error("Usuario/contraseña incorrectos")
+if authentication_status == None:
+    st.warning("Por favor, ingresa usuario y contraseña")
 if authentication_status:
+    authenticator.logout("Cerrar sesión", "sidebar")
+    st.sidebar.success(f"Bienvenido, {name}")
+
+    # --- Tu App Streamlit después del login ---
     st.set_page_config(page_title="Creación de Materiales", layout="wide")
 
     st.title("📦 Formulario de Creación de Materiales")
@@ -78,7 +86,3 @@ if authentication_status:
             file_name="material_creado.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-elif authentication_status is False:
-    st.error('Usuario o contraseña incorrectos')
-elif authentication_status is None:
-    st.warning('Por favor, ingresa tus credenciales')
