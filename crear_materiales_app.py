@@ -4,19 +4,35 @@ from datetime import date
 import io
 import streamlit_authenticator as stauth
 
-# --- SEGURIDAD: Configura usuarios y contraseñas (HASHED) ---
 names = ['Heidi Guevara', 'Usuario Demo']
 usernames = ['heidi', 'demo']
-# Contraseñas originales: miclaveSegura1, demopass
 hashed_passwords = [
     '$2b$12$5fzpyOj0oSjs3Q1RHywOjeYzck/gQ6keP0XZxIpPa.mqFByfRxy5y',  # miclaveSegura1
     '$2b$12$ve4SxNKeP4NEZTTkQuyQruYXG5r9J8.MXHnFA.LTkPvXTSqVnmIUa'   # demopass
 ]
 
-authenticator = stauth.Authenticate(names, usernames, hashed_passwords,
-                                    "materiales_app", "abcdef", cookie_expiry_days=1)
+# Credenciales estructuradas para la versión moderna del paquete
+credentials = {
+    "usernames": {
+        usernames[0]: {
+            "name": names[0],
+            "password": hashed_passwords[0]
+        },
+        usernames[1]: {
+            "name": names[1],
+            "password": hashed_passwords[1]
+        }
+    }
+}
 
-name, authentication_status, username = authenticator.login('main', fields={'Form name':'Login'})
+authenticator = stauth.Authenticate(
+    credentials=credentials,
+    cookie_name="materiales_app",
+    key="abcdef",
+    cookie_expiry_days=1
+)
+
+name, authentication_status, username = authenticator.login('main')
 
 if authentication_status == False:
     st.error("Usuario/contraseña incorrectos")
@@ -26,12 +42,10 @@ if authentication_status:
     authenticator.logout("Cerrar sesión", "sidebar")
     st.sidebar.success(f"Bienvenido, {name}")
 
-    # --- Tu App Streamlit después del login ---
     st.set_page_config(page_title="Creación de Materiales", layout="wide")
 
     st.title("📦 Formulario de Creación de Materiales")
 
-    # Sesión para almacenar los datos ingresados
     if "materiales" not in st.session_state:
         st.session_state.materiales = []
 
@@ -68,18 +82,15 @@ if authentication_status:
             st.session_state.materiales.append(nuevo_material)
             st.success("Material agregado correctamente ✅")
 
-    # Mostrar materiales cargados
     if st.session_state.materiales:
         st.subheader("📋 Materiales Ingresados")
         df = pd.DataFrame(st.session_state.materiales)
         st.dataframe(df, use_container_width=True)
 
-        # Crear archivo en memoria para descargar
         output = io.BytesIO()
         df.to_excel(output, index=False, engine='openpyxl')
         output.seek(0)
 
-        # Botón de descarga
         st.download_button(
             label="📥 Descargar archivo Excel",
             data=output,
