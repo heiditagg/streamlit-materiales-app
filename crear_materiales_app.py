@@ -1,39 +1,36 @@
 import streamlit as st
 import pandas as pd
+import yaml
 import streamlit_authenticator as stauth
 from datetime import date
 import io
 
-# Configura la página
-st.set_page_config(page_title="Creación de Materiales", layout="wide")
+# ----------- CARGA CONFIGURACIÓN DESDE YAML ------------
+with open('config.yaml') as file:
+    config = yaml.safe_load(file)
 
-# ========== SECCIÓN DE AUTENTICACIÓN ==========
-# Ejemplo de usuarios (puedes cambiar los datos)
-names = ['Heidi Guevara', 'Juan Pérez']
-usernames = ['heidi', 'juan']
-passwords = ['demo123', 'demo456']  # Cambia por contraseñas más seguras
-
-# Genera los hashes solo una vez (en la vida real, NO guardes contraseñas planas)
-hashed_passwords = stauth.Hasher(passwords).generate()
-
+# ----------- AUTENTICACIÓN -----------
 authenticator = stauth.Authenticate(
-    names, usernames, hashed_passwords,
-    "materiales_app", "abcdef", cookie_expiry_days=1
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized']
 )
 
 name, authentication_status, username = authenticator.login('main')
 
 if authentication_status is False:
-    st.error("Usuario o contraseña incorrectos.")
+    st.error('Usuario o contraseña incorrectos.')
 elif authentication_status is None:
-    st.warning("Por favor, ingresa tus credenciales.")
+    st.warning('Por favor, ingrese usuario y contraseña.')
 elif authentication_status:
-    authenticator.logout('Cerrar sesión', 'sidebar')
-    st.success(f"¡Bienvenido/a, {name}!")
+    st.success(f'Bienvenido, {name}!')
+
+    st.set_page_config(page_title="Creación de Materiales", layout="wide")
 
     st.title("📦 Formulario de Creación de Materiales")
 
-    # Sesión para almacenar los datos ingresados
     if "materiales" not in st.session_state:
         st.session_state.materiales = []
 
@@ -50,7 +47,7 @@ elif authentication_status:
         with col2:
             costo = st.number_input("Costo (S/)", min_value=0.0, step=0.01)
             detraccion = st.radio("¿Aplica Detracción?", ["Sí", "No"])
-            usuario = st.text_input("Usuario Solicitante", value=username)
+            usuario = st.text_input("Usuario Solicitante", value=name)
             fecha = st.date_input("Fecha de Solicitud", value=date.today())
 
         submitted = st.form_submit_button("➕ Agregar Material")
@@ -88,3 +85,6 @@ elif authentication_status:
             file_name="material_creado.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+    # Botón logout
+    authenticator.logout("Salir", "sidebar")
