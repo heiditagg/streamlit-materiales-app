@@ -86,23 +86,57 @@ elif authentication_status:
             )
             enviado = st.form_submit_button("Guardar solicitud")
             if enviado:
+                nuevo_material = {
+                    "Usuario": usuario,
+                    "Fecha": fecha,
+                    "Correo": correo,
+                    "Teléfono": telefono,
+                    "Descripción": descripcion,
+                    "Ramo": ramo,
+                    "Tipo material": tipo_material,
+                    "Código material": codigo_material,
+                    "UM Base": um_base,
+                    "UM Valoración": um_valoracion,
+                    "Grupo Artículos": grupo_articulos,
+                    "Costo (KG)": costo_kg,
+                    "Costo (UN)": costo_un,
+                    "Sector": sector,
+                    "Jerarquía": jerarquia,
+                    "Grupo tipo post": grupo_tipo_post,
+                    "Dim EAN bruto": dim_ean_bruto,
+                    "Dim EAN unidad": dim_ean_unidad,
+                    "Dim EAN neto": dim_ean_neto,
+                    "Grupo ME": grupo_me,
+                }
+                st.session_state.materiales.append(nuevo_material)
                 st.success("Datos guardados.")
 
     # ----------- RESTO DE PESTAÑAS (Áreas por completar) -----------
-    with tabs[1]:
-        st.subheader("Gestión de la Calidad")
-        st.info("Aquí irán los campos de Gestión de la Calidad (pendientes de definir).")
-    with tabs[2]:
-        st.subheader("Comercial")
-        st.info("Aquí irán los campos del área Comercial (pendientes de definir).")
-    with tabs[3]:
-        st.subheader("Planificación")
-        st.info("Aquí irán los campos del área Planificación (pendientes de definir).")
-    with tabs[4]:
-        st.subheader("Producción")
-        st.info("Aquí irán los campos del área Producción (pendientes de definir).")
-    with tabs[5]:
-        st.subheader("Contabilidad")
-        st.info("Aquí irán los campos del área Contabilidad (pendientes de definir).")
+    for i, label in enumerate([
+        "Gestión de la Calidad",
+        "Comercial",
+        "Planificación",
+        "Producción",
+        "Contabilidad"
+    ], start=1):
+        with tabs[i]:
+            st.subheader(label)
+            st.info(f"Aquí irán los campos del área {label} (pendientes de definir).")
+
+    # ----------- MOSTRAR Y DESCARGAR TABLA -----------
+    if st.session_state.materiales:
+        st.subheader("📋 Solicitudes Registradas")
+        df = pd.DataFrame(st.session_state.materiales)
+        st.dataframe(df, use_container_width=True)
+        output = io.BytesIO()
+        df.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+        st.download_button(
+            label="📥 Descargar archivo Excel",
+            data=output,
+            file_name="solicitudes_materiales.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     authenticator.logout("Salir", "sidebar")
+
