@@ -10,14 +10,16 @@ with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
 # ----------- AUTENTICACIÓN -----------
-authenticator = stauth.Authenticate(
+login_info = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days']
-)
+).login('main')
 
-name, authentication_status, username = authenticator.login('main')
+name = login_info['name']
+authentication_status = login_info['authentication_status']
+username = login_info['username']
 
 if authentication_status is False:
     st.error('Usuario o contraseña incorrectos.')
@@ -137,4 +139,4 @@ elif authentication_status:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    authenticator.logout("Salir", "sidebar")
+    stauth.Authenticate.logout("Salir", "sidebar")
