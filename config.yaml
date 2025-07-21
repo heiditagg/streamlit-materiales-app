@@ -3,11 +3,8 @@ credentials:
     admin:
       email: admin@empresa.com
       name: Administrador
-      password: 'AQUI_VA_EL_HASH_GENERADO'
+      password: '$2b$12$PON_AQUI_EL_HASH'
 cookie:
   expiry_days: 3
   key: 'una_clave_secreta_unica'
   name: 'streamlit_auth'
-preauthorized:
-  emails:
-    - admin@empresa.com
