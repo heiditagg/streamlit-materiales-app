@@ -3,7 +3,7 @@ credentials:
     admin:
       email: admin@empresa.com
       name: Administrador
-      password: '$2b$12$pZVFAeGBHMLpOBe1/TS2bOXLJObQ7z3vDsMKRvNfr8bIedB1Jq5y6' 
+      password: '$2b$12$pZVFAeGBHMLpOBe1/TS2bOXLJObQ7z3vDsMKRvNfr8bIedB1Jq5y6'
 cookie:
   expiry_days: 3
   key: 'una_clave_secreta_unica'
