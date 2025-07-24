@@ -23,12 +23,8 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante"):
-        usuario = st.text_input("Usuario Solicitante")
-        fecha = st.date_input("Fecha de Solicitud", value=date.today())
-        correo = st.text_input("Correo electrónico")
+        # Para los valores por default según "descripcion"
         descripcion = st.text_input("Descripción del material")
-        
-        # Valores por default si 'descripcion' tiene texto
         if descripcion:
             ramo_default = "R"
             sector_default = "10"
@@ -37,40 +33,48 @@ with tabs[0]:
             ramo_default = ""
             sector_default = ""
             grupo_tipo_post_default = ""
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            usuario = st.text_input("Usuario Solicitante")
+            fecha = st.date_input("Fecha de Solicitud", value=date.today())
+            correo = st.text_input("Correo electrónico")
+            ramo = st.text_input("Ramo (por default 'R' si 'Descripción del material' tiene valor)", value=ramo_default)
+            tipo_material = st.selectbox(
+                "Tipo de material",
+                ["PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"]
+            )
+            codigo_material = st.selectbox(
+                "Código de material",
+                ["FERT", "HALB", "ZHAL"]
+            )
+            um_base = st.selectbox(
+                "UM_BASE",
+                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+            )
+            grupo_articulos = st.text_area("Grupo de artículos")
+            costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01)
+            costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01)
+        
+        with col2:
+            um_valoracion = st.selectbox(
+                "UM_VALORACIÓN",
+                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+            )
+            sector = st.text_input("Sector (por default '10' si 'Descripción del material' tiene valores)", value=sector_default)
+            jerarquia = st.text_input("Jerarquía de productos")
+            grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)", value=grupo_tipo_post_default)
+            dim_ean_bruto = st.text_input("Dimensiones EAN (peso bruto)")
+            dim_ean_unidad = st.selectbox(
+                "Dimensiones EAN (unidad de peso)",
+                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+            )
+            dim_ean_neto = st.text_input("Dimensiones EAN (peso neto (kg))")
+            grupo_me = st.selectbox(
+                "Grupo materiales ME",
+                ["Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"]
+            )
 
-        ramo = st.text_input("Ramo (por default 'R' si 'Descripción del material' tiene valor)", value=ramo_default)
-        tipo_material = st.selectbox(
-            "Tipo de material",
-            ["PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"]
-        )
-        codigo_material = st.selectbox(
-            "Código de material",
-            ["FERT", "HALB", "ZHAL"]
-        )
-        um_base = st.selectbox(
-            "UM_BASE",
-            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-        )
-        um_valoracion = st.selectbox(
-            "UM_VALORACIÓN",
-            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-        )
-        grupo_articulos = st.text_area("Grupo de artículos")
-        costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01)
-        costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01)
-        sector = st.text_input("Sector (por default '10' si 'Descripción del material' tiene valores)", value=sector_default)
-        jerarquia = st.text_input("Jerarquía de productos")
-        grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)", value=grupo_tipo_post_default)
-        dim_ean_bruto = st.text_input("Dimensiones EAN (peso bruto)")
-        dim_ean_unidad = st.selectbox(
-            "Dimensiones EAN (unidad de peso)",
-            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-        )
-        dim_ean_neto = st.text_input("Dimensiones EAN (peso neto (kg))")
-        grupo_me = st.selectbox(
-            "Grupo materiales ME",
-            ["Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"]
-        )
         enviado = st.form_submit_button("Guardar solicitud")
         if enviado:
             nuevo_material = {
