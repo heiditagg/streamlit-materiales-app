@@ -42,8 +42,18 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante", clear_on_submit=False):
-        fields = {}
 
+        # Inicializar valores default SOLO si el campo está vacío
+        if "fecha" not in st.session_state:
+            st.session_state["fecha"] = date.today()
+
+        # Si 'descripcion' tiene valor, poner por defecto otros campos solo si están vacíos
+        if st.session_state.get("descripcion"):
+            if not st.session_state.get("ramo"): st.session_state["ramo"] = "R"
+            if not st.session_state.get("sector"): st.session_state["sector"] = "10"
+            if not st.session_state.get("grupo_tipo_post"): st.session_state["grupo_tipo_post"] = "NORM"
+
+        fields = {}
         # ---- Fila 1
         col1, col2 = st.columns(2)
         with col1:
@@ -57,7 +67,7 @@ with tabs[0]:
         # ---- Fila 2
         col1, col2 = st.columns(2)
         with col1:
-            fields['Fecha de Solicitud'] = st.date_input("Fecha de Solicitud", value=date.today(), key="fecha")
+            fields['Fecha de Solicitud'] = st.date_input("Fecha de Solicitud", key="fecha")
         with col2:
             fields['Código de material'] = st.selectbox(
                 "Código de material",
@@ -81,34 +91,24 @@ with tabs[0]:
                 "UM_BASE",
                 ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"], key="um_base"
             )
-        # Defaults para autollenado
-        descripcion_val = fields['Descripción del material']
-        if descripcion_val:
-            ramo_default = "R"
-            sector_default = "10"
-            grupo_tipo_post_default = "NORM"
-        else:
-            ramo_default = ""
-            sector_default = ""
-            grupo_tipo_post_default = ""
         # ---- Fila 5
         col1, col2 = st.columns(2)
         with col1:
             fields['Ramo'] = st.text_input(
                 "Ramo (por default 'R' si 'Descripción del material' tiene valor)",
-                value=ramo_default, key="ramo"
+                key="ramo"
             )
         with col2:
             fields['Sector'] = st.text_input(
                 "Sector (por default '10' si 'Descripción del material' tiene valores)",
-                value=sector_default, key="sector"
+                key="sector"
             )
         # ---- Fila 6
         col1, col2 = st.columns(2)
         with col1:
             fields['Grupo Tipo Post Gral'] = st.text_input(
                 "Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)",
-                value=grupo_tipo_post_default, key="grupo_tipo_post"
+                key="grupo_tipo_post"
             )
         with col2:
             fields['Jerarquía de productos'] = st.text_input("Jerarquía de productos", key="jerarquia")
@@ -201,16 +201,14 @@ with tabs[0]:
 
         # ----------- Reset: Limpia todos los campos, menos 'materiales' ----------
         if reestablecer:
-            keys = [
+            for k in [
                 "usuario", "um_valoracion", "fecha", "codigo_material", "correo", "tipo_material",
                 "descripcion", "um_base", "ramo", "sector", "grupo_tipo_post", "jerarquia",
                 "dim_ean_bruto", "dim_ean_unidad", "dim_ean_neto", "grupo_me",
                 "grupo_articulos", "costo_kg", "costo_un"
-            ]
-            for k in keys:
-                if k in st.session_state:
-                    del st.session_state[k]
-            st.rerun()  # <--- CORRECTO en versiones recientes
+            ]:
+                st.session_state.pop(k, None)
+            st.rerun()  # Refresca la página y los campos realmente quedan limpios
 
 # ----------- RESTO DE PESTAÑAS -----------
 for i, label in enumerate([
