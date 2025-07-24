@@ -119,4 +119,122 @@ with tabs[0]:
         with col2:
             fields['Dimensiones EAN (unidad de peso)'] = st.selectbox(
                 "Dimensiones EAN (unidad de peso)",
-                ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC]()
+                ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"],
+                key="dim_ean_unidad"
+            )
+        # ---- Fila 8
+        col1, col2 = st.columns(2)
+        with col1:
+            fields['Dimensiones EAN (peso neto (kg))'] = st.text_input("Dimensiones EAN (peso neto (kg))", key="dim_ean_neto")
+        with col2:
+            fields['Grupo materiales ME'] = st.selectbox(
+                "Grupo materiales ME",
+                ["", "Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"],
+                key="grupo_me"
+            )
+        # ---- Fila 9
+        col1, col2 = st.columns(2)
+        with col1:
+            fields['Grupo de artículos'] = st.text_area("Grupo de artículos", key="grupo_articulos")
+        with col2:
+            fields['Costo (KG)'] = st.number_input("Costo (KG)", min_value=0.0, step=0.01, key="costo_kg")
+        # ---- Fila 10
+        col1, col2 = st.columns(2)
+        with col1:
+            fields['Costo (UN)'] = st.number_input("Costo (UN)", min_value=0.0, step=0.01, key="costo_un")
+
+        # ----------- Botones en la misma fila, dentro del form -----------
+        col_guardar, col_reset = st.columns([1, 1])
+        enviado = col_guardar.form_submit_button("Guardar solicitud")
+        reestablecer = col_reset.form_submit_button("Reestablecer formulario")
+
+        # ----------- Validación de campos -----------
+        faltantes = [k for k, v in fields.items() if (not v or (isinstance(v, str) and v.strip() == ""))]
+        if fields["Costo (KG)"] == 0:
+            faltantes.append("Costo (KG)")
+        if fields["Costo (UN)"] == 0:
+            faltantes.append("Costo (UN)")
+
+        # --- CSS dinámico según llenado (celeste/plomo) ---
+        st.markdown(
+            f"""
+            <script>
+            const fieldNames = {list(fields.keys())};
+            fieldNames.forEach(function(label) {{
+                let inputs = Array.from(document.querySelectorAll('label')).filter(el => el.innerText.includes(label));
+                inputs.forEach(function(labelEl) {{
+                    let formField = labelEl.parentElement;
+                    let input = formField.querySelector('input,textarea,select');
+                    if (input) {{
+                        if (input.value && input.value !== "0" && input.value !== "") {{
+                            formField.classList.remove('field-empty');
+                            formField.classList.add('field-filled');
+                        }} else {{
+                            formField.classList.remove('field-filled');
+                            formField.classList.add('field-empty');
+                        }}
+                    }}
+                }});
+            }});
+            </script>
+            """, unsafe_allow_html=True
+        )
+
+        # Marcar en rojo si falta al guardar
+        if enviado and faltantes:
+            st.warning("Favor complete todos los campos.")
+            st.markdown(
+                f"""
+                <script>
+                const fields = {faltantes};
+                fields.forEach(function(label) {{
+                    let els = Array.from(document.querySelectorAll('label')).filter(el => el.innerText.includes(label));
+                    els.forEach(el => el.parentElement.classList.add('field-required'));
+                }});
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
+        elif enviado:
+            st.session_state.materiales.append({k: v for k, v in fields.items()})
+            st.success("Datos guardados.")
+
+        # ----------- Reset: Limpia todos los campos, menos 'materiales' ----------
+        if reestablecer:
+            keys = [
+                "usuario", "um_valoracion", "fecha", "codigo_material", "correo", "tipo_material",
+                "descripcion", "um_base", "ramo", "sector", "grupo_tipo_post", "jerarquia",
+                "dim_ean_bruto", "dim_ean_unidad", "dim_ean_neto", "grupo_me",
+                "grupo_articulos", "costo_kg", "costo_un"
+            ]
+            for k in keys:
+                if k in st.session_state:
+                    del st.session_state[k]
+            st.rerun()  # <--- CORRECTO en versiones recientes
+
+# ----------- RESTO DE PESTAÑAS -----------
+for i, label in enumerate([
+    "Gestión de la Calidad",
+    "Comercial",
+    "Planificación",
+    "Producción",
+    "Contabilidad"
+], start=1):
+    with tabs[i]:
+        st.subheader(label)
+        st.info(f"Aquí irán los campos del área {label} (pendientes de definir).")
+
+# ----------- MOSTRAR Y DESCARGAR TABLA -----------
+if "materiales" in st.session_state and st.session_state.materiales:
+    st.subheader("📋 Solicitudes Registradas")
+    df = pd.DataFrame(st.session_state.materiales)
+    st.dataframe(df, use_container_width=True)
+    output = io.BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+    st.download_button(
+        label="📥 Descargar archivo Excel",
+        data=output,
+        file_name="solicitudes_materiales.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
