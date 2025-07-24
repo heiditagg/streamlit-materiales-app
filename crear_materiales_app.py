@@ -23,20 +23,46 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            usuario = st.text_input("Usuario Solicitante")
-            fecha = st.date_input("Fecha de Solicitud", value=date.today())
-            correo = st.text_input("Correo electrónico")
-            descripcion = st.text_input("Descripción del material")
-        with col2:
-            um_valoracion = st.selectbox(
-                "UM_VALORACIÓN",
-                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-            )
 
-        # Lógica para valores por default según "descripcion"
+        # Defaults según descripción
+        descripcion = ""
+        ramo_default = ""
+        sector_default = ""
+        grupo_tipo_post_default = ""
+
+        # PRIMERA FILA (Usuario, UM_VALORACIÓN)
+        col1, col2 = st.columns(2)
+        usuario = col1.text_input("Usuario Solicitante")
+        um_valoracion = col2.selectbox(
+            "UM_VALORACIÓN",
+            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+        )
+
+        # SEGUNDA FILA (Fecha, Código material)
+        col1, col2 = st.columns(2)
+        fecha = col1.date_input("Fecha de Solicitud", value=date.today())
+        codigo_material = col2.selectbox(
+            "Código de material",
+            ["FERT", "HALB", "ZHAL"]
+        )
+
+        # TERCERA FILA (Correo, Tipo material)
+        col1, col2 = st.columns(2)
+        correo = col1.text_input("Correo electrónico")
+        tipo_material = col2.selectbox(
+            "Tipo de material",
+            ["PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"]
+        )
+
+        # CUARTA FILA (Descripción, UM_BASE)
+        col1, col2 = st.columns(2)
+        descripcion = col1.text_input("Descripción del material")
+        um_base = col2.selectbox(
+            "UM_BASE",
+            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+        )
+
+        # Lógica de defaults, recalculada si hay descripción
         if descripcion:
             ramo_default = "R"
             sector_default = "10"
@@ -46,38 +72,41 @@ with tabs[0]:
             sector_default = ""
             grupo_tipo_post_default = ""
 
+        # QUINTA FILA (Ramo, Sector)
         col1, col2 = st.columns(2)
-        with col1:
-            ramo = st.text_input("Ramo (por default 'R' si 'Descripción del material' tiene valor)", value=ramo_default)
-            tipo_material = st.selectbox(
-                "Tipo de material",
-                ["PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"]
-            )
-            codigo_material = st.selectbox(
-                "Código de material",
-                ["FERT", "HALB", "ZHAL"]
-            )
-            um_base = st.selectbox(
-                "UM_BASE",
-                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-            )
-            grupo_articulos = st.text_area("Grupo de artículos")
-            costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01)
-            costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01)
-        with col2:
-            sector = st.text_input("Sector (por default '10' si 'Descripción del material' tiene valores)", value=sector_default)
-            jerarquia = st.text_input("Jerarquía de productos")
-            grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)", value=grupo_tipo_post_default)
-            dim_ean_bruto = st.text_input("Dimensiones EAN (peso bruto)")
-            dim_ean_unidad = st.selectbox(
-                "Dimensiones EAN (unidad de peso)",
-                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-            )
-            dim_ean_neto = st.text_input("Dimensiones EAN (peso neto (kg))")
-            grupo_me = st.selectbox(
-                "Grupo materiales ME",
-                ["Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"]
-            )
+        ramo = col1.text_input("Ramo (por default 'R' si 'Descripción del material' tiene valor)", value=ramo_default)
+        sector = col2.text_input("Sector (por default '10' si 'Descripción del material' tiene valores)", value=sector_default)
+
+        # SEXTA FILA (Grupo Tipo Post, Jerarquía)
+        col1, col2 = st.columns(2)
+        grupo_tipo_post = col1.text_input("Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)", value=grupo_tipo_post_default)
+        jerarquia = col2.text_input("Jerarquía de productos")
+
+        # SÉPTIMA FILA (Dimensiones EAN bruto, Dimensiones EAN unidad)
+        col1, col2 = st.columns(2)
+        dim_ean_bruto = col1.text_input("Dimensiones EAN (peso bruto)")
+        dim_ean_unidad = col2.selectbox(
+            "Dimensiones EAN (unidad de peso)",
+            ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+        )
+
+        # OCTAVA FILA (Dimensiones EAN neto, Grupo materiales ME)
+        col1, col2 = st.columns(2)
+        dim_ean_neto = col1.text_input("Dimensiones EAN (peso neto (kg))")
+        grupo_me = col2.selectbox(
+            "Grupo materiales ME",
+            ["Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"]
+        )
+
+        # NOVENA FILA (Grupo artículos, Costo (KG))
+        col1, col2 = st.columns(2)
+        grupo_articulos = col1.text_area("Grupo de artículos")
+        costo_kg = col2.number_input("Costo (KG)", min_value=0.0, step=0.01)
+
+        # DÉCIMA FILA (Costo (UN), vacío)
+        col1, col2 = st.columns(2)
+        costo_un = col1.number_input("Costo (UN)", min_value=0.0, step=0.01)
+        # col2 vacío para mantener estructura
 
         enviado = st.form_submit_button("Guardar solicitud")
         if enviado:
