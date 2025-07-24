@@ -9,7 +9,7 @@ st.title("📦 Formulario de Creación de Materiales")
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
 
-# CSS para personalización visual (celeste cuando está lleno, plomo si vacío, rojo si falta al guardar)
+# CSS para personalización visual
 st.markdown("""
     <style>
     .field-filled input, .field-filled textarea, .field-filled select {
@@ -41,7 +41,7 @@ tabs = st.tabs([
 
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
-    with st.form("form_solicitante"):
+    with st.form("form_solicitante", clear_on_submit=False):
         fields = {}
 
         # ---- Fila 1
@@ -143,9 +143,12 @@ with tabs[0]:
         with col1:
             fields['Costo (UN)'] = st.number_input("Costo (UN)", min_value=0.0, step=0.01, key="costo_un")
 
-        enviado = st.form_submit_button("Guardar solicitud")
+        # ----------- Botones en la misma fila -----------
+        col_guardar, col_reset = st.columns([1, 1])
+        enviado = col_guardar.form_submit_button("Guardar solicitud")
+        reestablecer = col_reset.form_submit_button("Reestablecer formulario")
 
-        # --- Validación de campos ---
+        # ----------- Validación de campos -----------
         faltantes = [k for k, v in fields.items() if (not v or (isinstance(v, str) and v.strip() == ""))]
         if fields["Costo (KG)"] == 0:
             faltantes.append("Costo (KG)")
@@ -193,32 +196,4 @@ with tabs[0]:
                 unsafe_allow_html=True
             )
         elif enviado:
-            st.session_state.materiales.append({k: v for k, v in fields.items()})
-            st.success("Datos guardados.")
-
-# ----------- RESTO DE PESTAÑAS -----------
-for i, label in enumerate([
-    "Gestión de la Calidad",
-    "Comercial",
-    "Planificación",
-    "Producción",
-    "Contabilidad"
-], start=1):
-    with tabs[i]:
-        st.subheader(label)
-        st.info(f"Aquí irán los campos del área {label} (pendientes de definir).")
-
-# ----------- MOSTRAR Y DESCARGAR TABLA -----------
-if st.session_state.materiales:
-    st.subheader("📋 Solicitudes Registradas")
-    df = pd.DataFrame(st.session_state.materiales)
-    st.dataframe(df, use_container_width=True)
-    output = io.BytesIO()
-    df.to_excel(output, index=False, engine='openpyxl')
-    output.seek(0)
-    st.download_button(
-        label="📥 Descargar archivo Excel",
-        data=output,
-        file_name="solicitudes_materiales.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+            st.session_state.material_
