@@ -23,8 +23,20 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante"):
-        # Para los valores por default según "descripcion"
-        descripcion = st.text_input("Descripción del material")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            usuario = st.text_input("Usuario Solicitante")
+            fecha = st.date_input("Fecha de Solicitud", value=date.today())
+            correo = st.text_input("Correo electrónico")
+            descripcion = st.text_input("Descripción del material")
+        with col2:
+            um_valoracion = st.selectbox(
+                "UM_VALORACIÓN",
+                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
+            )
+
+        # Lógica para valores por default según "descripcion"
         if descripcion:
             ramo_default = "R"
             sector_default = "10"
@@ -33,12 +45,9 @@ with tabs[0]:
             ramo_default = ""
             sector_default = ""
             grupo_tipo_post_default = ""
-        
+
         col1, col2 = st.columns(2)
         with col1:
-            usuario = st.text_input("Usuario Solicitante")
-            fecha = st.date_input("Fecha de Solicitud", value=date.today())
-            correo = st.text_input("Correo electrónico")
             ramo = st.text_input("Ramo (por default 'R' si 'Descripción del material' tiene valor)", value=ramo_default)
             tipo_material = st.selectbox(
                 "Tipo de material",
@@ -55,12 +64,7 @@ with tabs[0]:
             grupo_articulos = st.text_area("Grupo de artículos")
             costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01)
             costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01)
-        
         with col2:
-            um_valoracion = st.selectbox(
-                "UM_VALORACIÓN",
-                ["BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"]
-            )
             sector = st.text_input("Sector (por default '10' si 'Descripción del material' tiene valores)", value=sector_default)
             jerarquia = st.text_input("Jerarquía de productos")
             grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si 'Descripción del material' tiene valor)", value=grupo_tipo_post_default)
