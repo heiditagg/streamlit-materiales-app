@@ -26,10 +26,9 @@ with tabs[0]:
         usuario = st.text_input("Usuario Solicitante")
         fecha = st.date_input("Fecha de Solicitud", value=date.today())
         correo = st.text_input("Correo electrónico")
-        telefono = st.text_input("Teléfono de contacto")
-
+   
         descripcion = st.text_input("Descripción del material")
-        ramo = st.text_input("Ramo (si existe valor en D5, por default 'R')")
+        ramo = st.text_input("Ramo (si existe valor en "Descripción del material", por default 'R')")
         tipo_material = st.selectbox(
             "Tipo de material",
             ["PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"]
@@ -49,9 +48,9 @@ with tabs[0]:
         grupo_articulos = st.text_area("Grupo de artículos")
         costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01)
         costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01)
-        sector = st.text_input("Sector (por default '10' si D5 tiene valor)")
+        sector = st.text_input("Sector (por default '10' si "Descripción del material" tiene valores)")
         jerarquia = st.text_input("Jerarquía de productos")
-        grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si D5 tiene valor)")
+        grupo_tipo_post = st.text_input("Grupo Tipo Post Gral (por default 'NORM' si "Descripción del material" tiene valor)")
         dim_ean_bruto = st.text_input("Dimensiones EAN (peso bruto)")
         dim_ean_unidad = st.selectbox(
             "Dimensiones EAN (unidad de peso)",
