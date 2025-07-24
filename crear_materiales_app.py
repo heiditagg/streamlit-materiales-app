@@ -9,7 +9,7 @@ st.title("📦 Formulario de Creación de Materiales")
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
 
-# CSS para personalización visual
+# CSS para visualización de campos
 st.markdown("""
     <style>
     .field-filled input, .field-filled textarea, .field-filled select {
@@ -43,11 +43,11 @@ with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante", clear_on_submit=False):
 
-        # Inicializar valores default SOLO si el campo está vacío
+        # Inicializar fecha sólo si no está ya en session_state
         if "fecha" not in st.session_state:
             st.session_state["fecha"] = date.today()
 
-        # Si 'descripcion' tiene valor, poner por defecto otros campos solo si están vacíos
+        # Defaults automáticos según descripción
         if st.session_state.get("descripcion"):
             if not st.session_state.get("ramo"): st.session_state["ramo"] = "R"
             if not st.session_state.get("sector"): st.session_state["sector"] = "10"
@@ -155,7 +155,6 @@ with tabs[0]:
         if fields["Costo (UN)"] == 0:
             faltantes.append("Costo (UN)")
 
-        # --- CSS dinámico según llenado (celeste/plomo) ---
         st.markdown(
             f"""
             <script>
@@ -201,14 +200,10 @@ with tabs[0]:
 
         # ----------- Reset: Limpia todos los campos, menos 'materiales' ----------
         if reestablecer:
-            for k in [
-                "usuario", "um_valoracion", "fecha", "codigo_material", "correo", "tipo_material",
-                "descripcion", "um_base", "ramo", "sector", "grupo_tipo_post", "jerarquia",
-                "dim_ean_bruto", "dim_ean_unidad", "dim_ean_neto", "grupo_me",
-                "grupo_articulos", "costo_kg", "costo_un"
-            ]:
-                st.session_state.pop(k, None)
-            st.rerun()  # Refresca la página y los campos realmente quedan limpios
+            materiales = st.session_state.get("materiales", [])
+            st.session_state.clear()
+            st.session_state.materiales = materiales
+            st.rerun()  # Ahora sí funciona y los campos quedan vacíos
 
 # ----------- RESTO DE PESTAÑAS -----------
 for i, label in enumerate([
