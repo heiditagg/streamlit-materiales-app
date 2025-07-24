@@ -8,6 +8,7 @@ import io
 # ----------- CARGA CONFIGURACIÓN DESDE YAML ------------
 with open('config.yaml') as file:
     config = yaml.safe_load(file)
+st.write(config)  # <<< LÍNEA DE DEPURACIÓN AGREGADA
 
 # ----------- AUTENTICACIÓN -----------
 authenticator = stauth.Authenticate(
@@ -148,4 +149,3 @@ elif authentication_status:
         )
 
     authenticator.logout("Salir", "sidebar")
-
