@@ -9,9 +9,17 @@ st.title("📦 Formulario de Creación de Materiales")
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
 
-# --------- CSS PARA MARCAR CAMPOS EN ROJO ---------
+# CSS para personalización visual (celeste cuando está lleno, plomo si vacío, rojo si falta al guardar)
 st.markdown("""
     <style>
+    .field-filled input, .field-filled textarea, .field-filled select {
+        background-color: #e8f1fc !important; /* celeste */
+        border: 1.5px solid #e8f1fc !important;
+    }
+    .field-empty input, .field-empty textarea, .field-empty select {
+        background-color: #f5f6fa !important; /* plomo claro */
+        border: 1.5px solid #f5f6fa !important;
+    }
     .field-required label {
         color: red !important;
     }
@@ -34,10 +42,9 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante"):
-        # Variables y recolección de inputs (guardamos refs para CSS)
         fields = {}
 
-        # 1
+        # ---- Fila 1
         col1, col2 = st.columns(2)
         with col1:
             fields['Usuario Solicitante'] = st.text_input("Usuario Solicitante", key="usuario")
@@ -47,7 +54,7 @@ with tabs[0]:
                 ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"],
                 key="um_valoracion"
             )
-        # 2
+        # ---- Fila 2
         col1, col2 = st.columns(2)
         with col1:
             fields['Fecha de Solicitud'] = st.date_input("Fecha de Solicitud", value=date.today(), key="fecha")
@@ -56,7 +63,7 @@ with tabs[0]:
                 "Código de material",
                 ["", "FERT", "HALB", "ZHAL"], key="codigo_material"
             )
-        # 3
+        # ---- Fila 3
         col1, col2 = st.columns(2)
         with col1:
             fields['Correo electrónico'] = st.text_input("Correo electrónico", key="correo")
@@ -65,7 +72,7 @@ with tabs[0]:
                 "Tipo de material",
                 ["", "PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO", "SUB_PRODUCTOS_DESECHOS_Y_DESPERDICIOS"], key="tipo_material"
             )
-        # 4
+        # ---- Fila 4
         col1, col2 = st.columns(2)
         with col1:
             fields['Descripción del material'] = st.text_input("Descripción del material", key="descripcion")
@@ -74,7 +81,7 @@ with tabs[0]:
                 "UM_BASE",
                 ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"], key="um_base"
             )
-        # Defaults por descripción
+        # Defaults
         descripcion_val = fields['Descripción del material']
         if descripcion_val:
             ramo_default = "R"
@@ -84,7 +91,7 @@ with tabs[0]:
             ramo_default = ""
             sector_default = ""
             grupo_tipo_post_default = ""
-        # 5
+        # ---- Fila 5
         col1, col2 = st.columns(2)
         with col1:
             fields['Ramo'] = st.text_input(
@@ -96,7 +103,7 @@ with tabs[0]:
                 "Sector (por default '10' si 'Descripción del material' tiene valores)",
                 value=sector_default, key="sector"
             )
-        # 6
+        # ---- Fila 6
         col1, col2 = st.columns(2)
         with col1:
             fields['Grupo Tipo Post Gral'] = st.text_input(
@@ -105,7 +112,7 @@ with tabs[0]:
             )
         with col2:
             fields['Jerarquía de productos'] = st.text_input("Jerarquía de productos", key="jerarquia")
-        # 7
+        # ---- Fila 7
         col1, col2 = st.columns(2)
         with col1:
             fields['Dimensiones EAN (peso bruto)'] = st.text_input("Dimensiones EAN (peso bruto)", key="dim_ean_bruto")
@@ -115,7 +122,7 @@ with tabs[0]:
                 ["", "BOL", "BOT", "CJ", "CIE", "CIL", "DOC", "GLN", "G", "KG", "LB", "L", "M", "M2", "M3", "MIL", "PAR", "T", "UN"],
                 key="dim_ean_unidad"
             )
-        # 8
+        # ---- Fila 8
         col1, col2 = st.columns(2)
         with col1:
             fields['Dimensiones EAN (peso neto (kg))'] = st.text_input("Dimensiones EAN (peso neto (kg))", key="dim_ean_neto")
@@ -125,31 +132,54 @@ with tabs[0]:
                 ["", "Z001-GPO. PALETS", "Z002-GPO. JABAS", "Z003-GPO. BANDEJAS", "Z004-GPO. CAJAS", "Z005-GPO. SACOS", "Z006-GPO. FULL CONTAINER LOAD (FCL)", "Z007-GPO. CARGA SUELTA", "Z008-GPO. LESS THAN CONTAINER LOAD (LCL)"],
                 key="grupo_me"
             )
-        # 9
+        # ---- Fila 9
         col1, col2 = st.columns(2)
         with col1:
             fields['Grupo de artículos'] = st.text_area("Grupo de artículos", key="grupo_articulos")
         with col2:
             fields['Costo (KG)'] = st.number_input("Costo (KG)", min_value=0.0, step=0.01, key="costo_kg")
-        # 10
+        # ---- Fila 10
         col1, col2 = st.columns(2)
         with col1:
             fields['Costo (UN)'] = st.number_input("Costo (UN)", min_value=0.0, step=0.01, key="costo_un")
 
         enviado = st.form_submit_button("Guardar solicitud")
 
-        # Validación de campos
+        # --- Validación de campos ---
         faltantes = [k for k, v in fields.items() if (not v or (isinstance(v, str) and v.strip() == ""))]
-        # Costo KG y UN deben ser > 0
         if fields["Costo (KG)"] == 0:
             faltantes.append("Costo (KG)")
         if fields["Costo (UN)"] == 0:
             faltantes.append("Costo (UN)")
 
-        # Aplica CSS a los inputs que faltan
+        # --- CSS dinámico según llenado (celeste/plomo) ---
+        st.markdown(
+            f"""
+            <script>
+            const fieldNames = {list(fields.keys())};
+            fieldNames.forEach(function(label) {{
+                let inputs = Array.from(document.querySelectorAll('label')).filter(el => el.innerText.includes(label));
+                inputs.forEach(function(labelEl) {{
+                    let formField = labelEl.parentElement;
+                    let input = formField.querySelector('input,textarea,select');
+                    if (input) {{
+                        if (input.value && input.value !== "0" && input.value !== "") {{
+                            formField.classList.remove('field-empty');
+                            formField.classList.add('field-filled');
+                        }} else {{
+                            formField.classList.remove('field-filled');
+                            formField.classList.add('field-empty');
+                        }}
+                    }}
+                }});
+            }});
+            </script>
+            """, unsafe_allow_html=True
+        )
+
+        # Marcar en rojo si falta al guardar
         if enviado and faltantes:
             st.warning("Favor complete todos los campos.")
-            # JavaScript/CSS hack para marcar los campos
             st.markdown(
                 f"""
                 <script>
@@ -163,12 +193,10 @@ with tabs[0]:
                 unsafe_allow_html=True
             )
         elif enviado:
-            st.session_state.materiales.append({
-                k: v for k, v in fields.items()
-            })
+            st.session_state.materiales.append({k: v for k, v in fields.items()})
             st.success("Datos guardados.")
 
-# ----------- RESTO DE PESTAÑAS (Áreas por completar) -----------
+# ----------- RESTO DE PESTAÑAS -----------
 for i, label in enumerate([
     "Gestión de la Calidad",
     "Comercial",
