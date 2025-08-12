@@ -6,7 +6,15 @@ import io
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
 st.title("📦 Formulario de Creación de Materiales")
 
-# --- Campos pestaña Solicitante ---
+# -------------------- Constantes de Calidad --------------------
+LINEAS = [
+    "01 Pollo Beneficiado entero","02 Pollo Trozado","03 Cerdo Beneficiado entero","04 Cerdo Trozado",
+    "05 Pavo","06 Preparados","07 Empanizados","08 Embutidos","09 Filete",
+    "10 Trozado Marinado","11 Menudencias","12 Filete Marinado","13 Semielaborados"
+]
+ESTADOS = ["01 Fresco","02 Congelado","03 Por Congelar"]
+
+# -------------------- Campos Solicitante -----------------------
 CAMPOS = [
     ("usuario", ""),
     ("um_valoracion", ""),
@@ -29,33 +37,63 @@ CAMPOS = [
     ("costo_un", 0.0),
 ]
 
-# --- Campos pestaña Gestión de la Calidad ---
-LINEAS = [
-    "01 Pollo Beneficiado entero","02 Pollo Trozado","03 Cerdo Beneficiado entero","04 Cerdo Trozado",
-    "05 Pavo","06 Preparados","07 Empanizados","08 Embutidos","09 Filete",
-    "10 Trozado Marinado","11 Menudencias","12 Filete Marinado","13 Semielaborados"
-]
-ESTADOS = ["01 Fresco","02 Congelado","03 Por Congelar"]
-
+# -------------------- Campos Gestión de la Calidad ------------
 QC_CAMPOS = [
-    ("qc_categoria", ""),           # autocalculado: "001" si hay descripción
-    ("qc_asignacion_clase", ""),    # autocalculado: "ZMM_CLASS_MAT" si categoria "001"
+    ("qc_categoria", ""),            # auto: "001" si hay descripción
+    ("qc_asignacion_clase", ""),     # auto: "ZMM_CLASS_MAT" si categoria "001"
     ("qc_linea", ""),
     ("qc_estado", "")
 ]
 
+# Para facilitar futuras pestañas
+FIELD_GROUPS = [CAMPOS, QC_CAMPOS]
+
 def limpiar_campos():
-    # pestaña solicitante
-    for k, v in CAMPOS:
-        st.session_state[k] = date.today() if k == "fecha" else v
-    # pestaña calidad
-    for k, v in QC_CAMPOS:
-        st.session_state[k] = v
+    """Resetea todos los campos de todas las pestañas."""
+    for group in FIELD_GROUPS:
+        for k, v in group:
+            if k == "fecha":
+                st.session_state[k] = date.today()
+            elif isinstance(v, list):
+                st.session_state[k] = list(v)
+            else:
+                st.session_state[k] = v
+
+def recolectar_payload():
+    """Recolecta todos los campos definidos en FIELD_GROUPS."""
+    payload = {}
+    for group in FIELD_GROUPS:
+        for k, _ in group:
+            payload[k] = st.session_state.get(k, "")
+    return payload
+
+def autocalcular_qc():
+    """Calcula categoría y asignación en base a descripción."""
+    desc = st.session_state.get("descripcion", "").strip()
+    st.session_state["qc_categoria"] = "001" if desc else ""
+    st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
+
+def validar_solicitante():
+    """Valida mínimos de la pestaña Solicitante."""
+    campos_solicitante = {k: st.session_state.get(k, "") for k, _ in CAMPOS}
+    return not any((v == "" or v == 0.0) for k, v in campos_solicitante.items() if k != "fecha")
+
+def guardar_solicitud():
+    """Guarda la solicitud consolidando todas las pestañas."""
+    autocalcular_qc()
+    if not validar_solicitante():
+        st.warning("Favor complete todos los campos de la pestaña Solicitante.")
+        return
+    payload = recolectar_payload()
+    st.session_state.materiales.append(payload)
+    st.success("Datos guardados.")
+    limpiar_campos()
+    st.experimental_rerun()
 
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
 
-# ------------------------ UI ------------------------
+# ----------------------------- UI ------------------------------
 tabs = st.tabs([
     "Solicitante",
     "Gestión de la Calidad",
@@ -130,26 +168,8 @@ with tabs[0]:
         enviado = col_guardar.form_submit_button("Guardar solicitud")
         reestablecer = col_reset.form_submit_button("Reestablecer formulario")
 
-        # ---------- Guardar / Reset ----------
         if enviado:
-            # autocalcular campos de calidad antes de guardar (por si no visitaron la pestaña)
-            desc = st.session_state.get("descripcion", "").strip()
-            st.session_state["qc_categoria"] = "001" if desc else ""
-            st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
-
-            campos = {k: st.session_state[k] for k, _ in CAMPOS}
-            qc_campos = {k: st.session_state.get(k, "") for k, _ in QC_CAMPOS}
-            payload = {**campos, **qc_campos}
-
-            # validación mínima: obligatorios de solicitante
-            if any((v == "" or v == 0.0) for k, v in campos.items() if k != "fecha"):
-                st.warning("Favor complete todos los campos de la pestaña Solicitante.")
-            else:
-                st.session_state.materiales.append(payload)
-                st.success("Datos guardados.")
-                limpiar_campos()
-                st.experimental_rerun()
-
+            guardar_solicitud()
         if reestablecer:
             limpiar_campos()
             st.experimental_rerun()
@@ -158,25 +178,35 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Gestión de la Calidad")
 
-    # Autocálculo en tiempo real
-    desc = st.session_state.get("descripcion", "").strip()
-    categoria = "001" if desc else ""
-    st.session_state["qc_categoria"] = categoria
-    st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if categoria == "001" else ""
+    # Form de la pestaña Calidad (con botones propios)
+    with st.form("form_calidad", clear_on_submit=False):
+        # Autocálculo en tiempo real según descripción
+        autocalcular_qc()
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.text_input("Categoría (auto)", key="qc_categoria", disabled=True)
-        st.selectbox("Línea", [""] + LINEAS, key="qc_linea")
-    with c2:
-        st.text_input("Asignaciones: Clase (auto)", key="qc_asignacion_clase", disabled=True)
-        st.selectbox("Estado", [""] + ESTADOS, key="qc_estado")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.text_input("Categoría (auto)", key="qc_categoria", disabled=True)
+            st.selectbox("Línea", [""] + LINEAS, key="qc_linea")
+        with c2:
+            st.text_input("Asignaciones: Clase (auto)", key="qc_asignacion_clase", disabled=True)
+            st.selectbox("Estado", [""] + ESTADOS, key="qc_estado")
+
+        col_guardar_qc, col_reset_qc = st.columns([1, 1])
+        enviado_qc = col_guardar_qc.form_submit_button("Guardar solicitud")
+        reestablecer_qc = col_reset_qc.form_submit_button("Reestablecer formulario")
+
+        if enviado_qc:
+            guardar_solicitud()
+        if reestablecer_qc:
+            limpiar_campos()
+            st.experimental_rerun()
 
 # ---------- Tabla y descarga ----------
 if st.session_state.materiales:
     st.subheader("📋 Solicitudes Registradas")
     df = pd.DataFrame(st.session_state.materiales)
     st.dataframe(df, use_container_width=True)
+
     output = io.BytesIO()
     df.to_excel(output, index=False, engine='openpyxl')
     output.seek(0)
