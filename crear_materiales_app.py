@@ -6,7 +6,7 @@ import io
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
 st.title("📦 Formulario de Creación de Materiales")
 
-# --- Definir keys de todos los campos ---
+# --- Campos pestaña Solicitante ---
 CAMPOS = [
     ("usuario", ""),
     ("um_valoracion", ""),
@@ -29,17 +29,33 @@ CAMPOS = [
     ("costo_un", 0.0),
 ]
 
+# --- Campos pestaña Gestión de la Calidad ---
+LINEAS = [
+    "01 Pollo Beneficiado entero","02 Pollo Trozado","03 Cerdo Beneficiado entero","04 Cerdo Trozado",
+    "05 Pavo","06 Preparados","07 Empanizados","08 Embutidos","09 Filete",
+    "10 Trozado Marinado","11 Menudencias","12 Filete Marinado","13 Semielaborados"
+]
+ESTADOS = ["01 Fresco","02 Congelado","03 Por Congelar"]
+
+QC_CAMPOS = [
+    ("qc_categoria", ""),           # autocalculado: "001" si hay descripción
+    ("qc_asignacion_clase", ""),    # autocalculado: "ZMM_CLASS_MAT" si categoria "001"
+    ("qc_linea", ""),
+    ("qc_estado", "")
+]
+
 def limpiar_campos():
+    # pestaña solicitante
     for k, v in CAMPOS:
-        # Usar date.today() para "fecha", evitar siempre el mismo valor
-        if k == "fecha":
-            st.session_state[k] = date.today()
-        else:
-            st.session_state[k] = v
+        st.session_state[k] = date.today() if k == "fecha" else v
+    # pestaña calidad
+    for k, v in QC_CAMPOS:
+        st.session_state[k] = v
 
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
 
+# ------------------------ UI ------------------------
 tabs = st.tabs([
     "Solicitante",
     "Gestión de la Calidad",
@@ -49,76 +65,87 @@ tabs = st.tabs([
     "Contabilidad"
 ])
 
+# ---------- TAB 1: Solicitante ----------
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante", clear_on_submit=False):
 
         col1, col2 = st.columns(2)
         with col1:
-            usuario = st.text_input("Usuario Solicitante", key="usuario")
+            st.text_input("Usuario Solicitante", key="usuario")
         with col2:
-            um_valoracion = st.selectbox("UM_VALORACIÓN", ["", "BOL", "BOT", "CJ"], key="um_valoracion")
+            st.selectbox("UM_VALORACIÓN", ["", "BOL", "BOT", "CJ"], key="um_valoracion")
 
         col1, col2 = st.columns(2)
         with col1:
-            fecha = st.date_input("Fecha de Solicitud", key="fecha")
+            st.date_input("Fecha de Solicitud", key="fecha")
         with col2:
-            codigo_material = st.selectbox("Código de material", ["", "FERT", "HALB", "ZHAL"], key="codigo_material")
+            st.selectbox("Código de material", ["", "FERT", "HALB", "ZHAL"], key="codigo_material")
 
         col1, col2 = st.columns(2)
         with col1:
-            correo = st.text_input("Correo electrónico", key="correo")
+            st.text_input("Correo electrónico", key="correo")
         with col2:
-            tipo_material = st.selectbox("Tipo de material", ["", "PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO"], key="tipo_material")
+            st.selectbox("Tipo de material", ["", "PRODUCTO_TERMINADO", "PRODUCTO_SEMIELABORADO"], key="tipo_material")
 
         col1, col2 = st.columns(2)
         with col1:
-            descripcion = st.text_input("Descripción del material", key="descripcion")
+            st.text_input("Descripción del material", key="descripcion")
         with col2:
-            um_base = st.selectbox("UM_BASE", ["", "BOL", "BOT", "CJ"], key="um_base")
+            st.selectbox("UM_BASE", ["", "BOL", "BOT", "CJ"], key="um_base")
 
         col1, col2 = st.columns(2)
         with col1:
-            ramo = st.text_input("Ramo", key="ramo")
+            st.text_input("Ramo", key="ramo")
         with col2:
-            sector = st.text_input("Sector", key="sector")
+            st.text_input("Sector", key="sector")
 
         col1, col2 = st.columns(2)
         with col1:
-            grupo_tipo_post = st.text_input("Grupo Tipo Post Gral", key="grupo_tipo_post")
+            st.text_input("Grupo Tipo Post Gral", key="grupo_tipo_post")
         with col2:
-            jerarquia = st.text_input("Jerarquía de productos", key="jerarquia")
+            st.text_input("Jerarquía de productos", key="jerarquia")
 
         col1, col2 = st.columns(2)
         with col1:
-            dim_ean_bruto = st.text_input("Dimensiones EAN (peso bruto)", key="dim_ean_bruto")
+            st.text_input("Dimensiones EAN (peso bruto)", key="dim_ean_bruto")
         with col2:
-            dim_ean_unidad = st.selectbox("Dimensiones EAN (unidad de peso)", ["", "KG", "G", "LB"], key="dim_ean_unidad")
+            st.selectbox("Dimensiones EAN (unidad de peso)", ["", "KG", "G", "LB"], key="dim_ean_unidad")
 
         col1, col2 = st.columns(2)
         with col1:
-            dim_ean_neto = st.text_input("Dimensiones EAN (peso neto (kg))", key="dim_ean_neto")
+            st.text_input("Dimensiones EAN (peso neto (kg))", key="dim_ean_neto")
         with col2:
-            grupo_me = st.selectbox("Grupo materiales ME", ["", "Z001-GPO. PALETS", "Z002-GPO. JABAS"], key="grupo_me")
+            st.selectbox("Grupo materiales ME", ["", "Z001-GPO. PALETS", "Z002-GPO. JABAS"], key="grupo_me")
 
         col1, col2 = st.columns(2)
         with col1:
-            grupo_articulos = st.text_area("Grupo de artículos", key="grupo_articulos")
+            st.text_area("Grupo de artículos", key="grupo_articulos")
         with col2:
-            costo_kg = st.number_input("Costo (KG)", min_value=0.0, step=0.01, key="costo_kg")
+            st.number_input("Costo (KG)", min_value=0.0, step=0.01, key="costo_kg")
 
-        costo_un = st.number_input("Costo (UN)", min_value=0.0, step=0.01, key="costo_un")
+        st.number_input("Costo (UN)", min_value=0.0, step=0.01, key="costo_un")
 
         col_guardar, col_reset = st.columns([1, 1])
         enviado = col_guardar.form_submit_button("Guardar solicitud")
         reestablecer = col_reset.form_submit_button("Reestablecer formulario")
 
+        # ---------- Guardar / Reset ----------
         if enviado:
+            # autocalcular campos de calidad antes de guardar (por si no visitaron la pestaña)
+            desc = st.session_state.get("descripcion", "").strip()
+            st.session_state["qc_categoria"] = "001" if desc else ""
+            st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
+
             campos = {k: st.session_state[k] for k, _ in CAMPOS}
-            if any(v == "" or v == 0.0 for k, v in campos.items() if k not in ["fecha"]):
-                st.warning("Favor complete todos los campos.")
+            qc_campos = {k: st.session_state.get(k, "") for k, _ in QC_CAMPOS}
+            payload = {**campos, **qc_campos}
+
+            # validación mínima: obligatorios de solicitante
+            if any((v == "" or v == 0.0) for k, v in campos.items() if k != "fecha"):
+                st.warning("Favor complete todos los campos de la pestaña Solicitante.")
             else:
-                st.session_state.materiales.append(campos)
+                st.session_state.materiales.append(payload)
                 st.success("Datos guardados.")
                 limpiar_campos()
                 st.experimental_rerun()
@@ -127,6 +154,25 @@ with tabs[0]:
             limpiar_campos()
             st.experimental_rerun()
 
+# ---------- TAB 2: Gestión de la Calidad ----------
+with tabs[1]:
+    st.subheader("Gestión de la Calidad")
+
+    # Autocálculo en tiempo real
+    desc = st.session_state.get("descripcion", "").strip()
+    categoria = "001" if desc else ""
+    st.session_state["qc_categoria"] = categoria
+    st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if categoria == "001" else ""
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.text_input("Categoría (auto)", key="qc_categoria", disabled=True)
+        st.selectbox("Línea", [""] + LINEAS, key="qc_linea")
+    with c2:
+        st.text_input("Asignaciones: Clase (auto)", key="qc_asignacion_clase", disabled=True)
+        st.selectbox("Estado", [""] + ESTADOS, key="qc_estado")
+
+# ---------- Tabla y descarga ----------
 if st.session_state.materiales:
     st.subheader("📋 Solicitudes Registradas")
     df = pd.DataFrame(st.session_state.materiales)
