@@ -4,7 +4,7 @@ from datetime import date
 import io
 
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
-st.title("GD-F003 Creación de Materiales _ Producto Terminado, Semielaborado y Sub-Productos ")
+st.title("GD-F003 Creación de Materiales")
 
 # -------------------- Flags / Estado --------------------
 if "_pending_reset" not in st.session_state:
