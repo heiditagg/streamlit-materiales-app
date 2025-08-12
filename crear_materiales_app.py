@@ -6,13 +6,20 @@ import io
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
 st.title("📦 Formulario de Creación de Materiales")
 
-# -------------------- Flags de control --------------------
+# -------------------- Flags / Estado --------------------
 if "_pending_reset" not in st.session_state:
     st.session_state._pending_reset = False
 if "_flash" not in st.session_state:
     st.session_state._flash = None
 if "materiales" not in st.session_state:
     st.session_state.materiales = []
+if "_row_counter" not in st.session_state:
+    st.session_state._row_counter = 0
+# Confirmador de borrado
+if "_show_confirm_delete" not in st.session_state:
+    st.session_state._show_confirm_delete = False
+if "_confirm_delete_ids" not in st.session_state:
+    st.session_state._confirm_delete_ids = []
 
 # -------------------- Constantes de Calidad --------------------
 LINEAS = [
@@ -45,8 +52,7 @@ CAMPOS = [
     ("costo_un", 0.0),
 ]
 
-# -------------------- Campos Gestión de la Calidad ------------
-# OJO: qc_categoria y qc_asignacion_clase SE CALCULAN, no se guardan en session_state
+# -------------------- Campos Gestión de la Calidad (manuales) ------------
 QC_CAMPOS = [
     ("qc_linea", ""),
     ("qc_estado", "")
@@ -54,8 +60,8 @@ QC_CAMPOS = [
 
 FIELD_GROUPS = [CAMPOS, QC_CAMPOS]
 
+# -------------------- Utilidades --------------------
 def limpiar_campos():
-    """Resetea todos los campos de todas las pestañas."""
     for group in FIELD_GROUPS:
         for k, v in group:
             if k == "fecha":
@@ -66,7 +72,6 @@ def limpiar_campos():
                 st.session_state[k] = v
 
 def recolectar_payload():
-    """Recolecta todos los campos definidos en FIELD_GROUPS."""
     payload = {}
     for group in FIELD_GROUPS:
         for k, _ in group:
@@ -74,43 +79,49 @@ def recolectar_payload():
     return payload
 
 def calcular_qc():
-    """Devuelve (categoria, asignacion_clase) sin escribir en session_state."""
     desc = st.session_state.get("descripcion", "").strip()
     categoria = "001" if desc else ""
     asignacion = "ZMM_CLASS_MAT" if categoria == "001" else ""
     return categoria, asignacion
 
 def validar_solicitante():
-    """Valida mínimos de la pestaña Solicitante."""
     campos_solicitante = {k: st.session_state.get(k, "") for k, _ in CAMPOS}
     return not any((v == "" or v == 0.0) for k, v in campos_solicitante.items() if k != "fecha")
 
 def guardar_solicitud():
-    """Guarda la solicitud consolidando todas las pestañas."""
     if not validar_solicitante():
         st.warning("Favor complete todos los campos de la pestaña Solicitante.")
         return
 
     payload = recolectar_payload()
-
-    # Inyectar cálculo de Calidad al payload (sin tocar session_state)
     cat, asig = calcular_qc()
     payload["qc_categoria"] = cat
     payload["qc_asignacion_clase"] = asig
 
+    st.session_state._row_counter += 1
+    payload["_id"] = f"R{st.session_state._row_counter:05d}"
+
     st.session_state.materiales.append(payload)
 
-    # Programar limpieza y mostrar mensaje en el próximo run
     st.session_state._flash = "Datos guardados."
     st.session_state._pending_reset = True
     st.rerun()
 
-# --------- Ejecutar limpieza si quedó pendiente de un submit previo ----------
+def eliminar_por_ids(ids):
+    if not ids:
+        return
+    st.session_state.materiales = [r for r in st.session_state.materiales if r.get("_id") not in ids]
+    st.session_state._flash = f"Se eliminaron {len(ids)} registro(s)."
+    st.session_state._show_confirm_delete = False
+    st.session_state._confirm_delete_ids = []
+    st.rerun()
+
+# --------- Reset pendiente tras un submit previo ----------
 if st.session_state._pending_reset:
     limpiar_campos()
     st.session_state._pending_reset = False
 
-# --------- Mostrar mensaje 'flash' si existe ----------
+# --------- Mensaje 'flash' si existe ----------
 if st.session_state._flash:
     st.success(st.session_state._flash)
     st.session_state._flash = None
@@ -129,7 +140,6 @@ tabs = st.tabs([
 with tabs[0]:
     st.subheader("Datos del solicitante y del material")
     with st.form("form_solicitante", clear_on_submit=False):
-
         col1, col2 = st.columns(2)
         with col1:
             st.text_input("Usuario Solicitante", key="usuario")
@@ -199,8 +209,6 @@ with tabs[0]:
 # ---------- TAB 2: Gestión de la Calidad ----------
 with tabs[1]:
     st.subheader("Gestión de la Calidad")
-
-    # Mostrar los campos calculados SOLO como visualización (no guardan estado)
     cat_view, asig_view = calcular_qc()
 
     with st.form("form_calidad", clear_on_submit=False):
@@ -222,14 +230,57 @@ with tabs[1]:
             st.session_state._pending_reset = True
             st.rerun()
 
-# ---------- Tabla y descarga ----------
+# ---------- Tabla + Borrado (con confirmación) y descarga ----------
 if st.session_state.materiales:
     st.subheader("📋 Solicitudes Registradas")
-    df = pd.DataFrame(st.session_state.materiales)
-    st.dataframe(df, use_container_width=True)
 
+    df = pd.DataFrame(st.session_state.materiales)
+    view_df = df.copy()
+    view_df.insert(0, "🗑️", False)
+
+    edited_df = st.data_editor(
+        view_df,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "🗑️": st.column_config.CheckboxColumn("🗑️", help="Selecciona para eliminar")
+        },
+        key="editor_solicitudes",
+    )
+
+    seleccionados = edited_df.loc[edited_df["🗑️"] == True]
+
+    cols = st.columns([1, 3])
+    with cols[0]:
+        clicked_del = st.button("Eliminar seleccionados", disabled=seleccionados.empty)
+
+    if clicked_del:
+        ids_a_borrar = df.loc[seleccionados.index, "_id"].tolist()
+        st.session_state._confirm_delete_ids = ids_a_borrar
+        st.session_state._show_confirm_delete = True
+        st.rerun()
+
+    # --- Modal/confirmación simple ---
+    if st.session_state._show_confirm_delete:
+        ids = st.session_state._confirm_delete_ids
+        st.warning(
+            f"¿Seguro que deseas eliminar {len(ids)} registro(s)? "
+            f"IDs: {', '.join(ids)}"
+        )
+        c_ok, c_cancel = st.columns(2)
+        with c_ok:
+            if st.button("✅ Confirmar eliminación"):
+                eliminar_por_ids(ids)
+        with c_cancel:
+            if st.button("❌ Cancelar"):
+                st.session_state._show_confirm_delete = False
+                st.session_state._confirm_delete_ids = []
+                st.rerun()
+
+    # Exportar sin columnas internas
+    export_df = df.drop(columns=[c for c in df.columns if c.startswith("_")], errors="ignore")
     output = io.BytesIO()
-    df.to_excel(output, index=False, engine='openpyxl')
+    export_df.to_excel(output, index=False, engine='openpyxl')
     output.seek(0)
     st.download_button(
         label="📥 Descargar archivo Excel",
@@ -237,6 +288,3 @@ if st.session_state.materiales:
         file_name="solicitudes_materiales.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
-
-
