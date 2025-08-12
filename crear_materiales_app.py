@@ -99,7 +99,7 @@ def guardar_solicitud():
     # Programar limpieza y mostrar mensaje en el próximo run
     st.session_state._flash = "Datos guardados."
     st.session_state._pending_reset = True
-    st.experimental_rerun()
+    st.rerun()
 
 # --------- Ejecutar limpieza si quedó pendiente de un submit previo ----------
 if st.session_state._pending_reset:
@@ -190,7 +190,7 @@ with tabs[0]:
             guardar_solicitud()
         if reestablecer:
             st.session_state._pending_reset = True
-            st.experimental_rerun()
+            st.rerun()
 
 # ---------- TAB 2: Gestión de la Calidad ----------
 with tabs[1]:
@@ -216,7 +216,7 @@ with tabs[1]:
             guardar_solicitud()
         if reestablecer_qc:
             st.session_state._pending_reset = True
-            st.experimental_rerun()
+            st.rerun()
 
 # ---------- Tabla y descarga ----------
 if st.session_state.materiales:
@@ -233,4 +233,5 @@ if st.session_state.materiales:
         file_name="solicitudes_materiales.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
