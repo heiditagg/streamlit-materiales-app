@@ -46,9 +46,8 @@ CAMPOS = [
 ]
 
 # -------------------- Campos Gestión de la Calidad ------------
+# OJO: qc_categoria y qc_asignacion_clase SE CALCULAN, no se guardan en session_state
 QC_CAMPOS = [
-    ("qc_categoria", ""),            # auto: "001" si hay descripción
-    ("qc_asignacion_clase", ""),     # auto: "ZMM_CLASS_MAT" si categoria "001"
     ("qc_linea", ""),
     ("qc_estado", "")
 ]
@@ -74,13 +73,12 @@ def recolectar_payload():
             payload[k] = st.session_state.get(k, "")
     return payload
 
-def autocalcular_qc():
-    """Calcula categoría y asignación en base a descripción."""
+def calcular_qc():
+    """Devuelve (categoria, asignacion_clase) sin escribir en session_state."""
     desc = st.session_state.get("descripcion", "").strip()
-    st.session_state["qc_categoria"] = "001" if desc else ""
-    st.session_state["qc_asignacion_clase"] = (
-        "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
-    )
+    categoria = "001" if desc else ""
+    asignacion = "ZMM_CLASS_MAT" if categoria == "001" else ""
+    return categoria, asignacion
 
 def validar_solicitante():
     """Valida mínimos de la pestaña Solicitante."""
@@ -88,14 +86,20 @@ def validar_solicitante():
     return not any((v == "" or v == 0.0) for k, v in campos_solicitante.items() if k != "fecha")
 
 def guardar_solicitud():
-    """Guarda la solicitud consolidando todas las pestañas.
-       No limpia aquí para evitar errores de estado dentro del submit."""
-    autocalcular_qc()
+    """Guarda la solicitud consolidando todas las pestañas."""
     if not validar_solicitante():
         st.warning("Favor complete todos los campos de la pestaña Solicitante.")
         return
+
     payload = recolectar_payload()
+
+    # Inyectar cálculo de Calidad al payload (sin tocar session_state)
+    cat, asig = calcular_qc()
+    payload["qc_categoria"] = cat
+    payload["qc_asignacion_clase"] = asig
+
     st.session_state.materiales.append(payload)
+
     # Programar limpieza y mostrar mensaje en el próximo run
     st.session_state._flash = "Datos guardados."
     st.session_state._pending_reset = True
@@ -196,16 +200,16 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Gestión de la Calidad")
 
-    # Autocálculo en tiempo real según descripción
-    autocalcular_qc()
+    # Mostrar los campos calculados SOLO como visualización (no guardan estado)
+    cat_view, asig_view = calcular_qc()
 
     with st.form("form_calidad", clear_on_submit=False):
         c1, c2 = st.columns(2)
         with c1:
-            st.text_input("Categoría (auto)", key="qc_categoria", disabled=True)
+            st.text_input("Categoría (auto)", value=cat_view, key="qc_categoria_view", disabled=True)
             st.selectbox("Línea", [""] + LINEAS, key="qc_linea")
         with c2:
-            st.text_input("Asignaciones: Clase (auto)", key="qc_asignacion_clase", disabled=True)
+            st.text_input("Asignaciones: Clase (auto)", value=asig_view, key="qc_asignacion_clase_view", disabled=True)
             st.selectbox("Estado", [""] + ESTADOS, key="qc_estado")
 
         col_guardar_qc, col_reset_qc = st.columns([1, 1])
@@ -233,5 +237,6 @@ if st.session_state.materiales:
         file_name="solicitudes_materiales.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
