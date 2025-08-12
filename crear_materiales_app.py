@@ -6,6 +6,14 @@ import io
 st.set_page_config(page_title="Creación de Materiales", layout="wide")
 st.title("📦 Formulario de Creación de Materiales")
 
+# -------------------- Flags de control --------------------
+if "_pending_reset" not in st.session_state:
+    st.session_state._pending_reset = False
+if "_flash" not in st.session_state:
+    st.session_state._flash = None
+if "materiales" not in st.session_state:
+    st.session_state.materiales = []
+
 # -------------------- Constantes de Calidad --------------------
 LINEAS = [
     "01 Pollo Beneficiado entero","02 Pollo Trozado","03 Cerdo Beneficiado entero","04 Cerdo Trozado",
@@ -45,7 +53,6 @@ QC_CAMPOS = [
     ("qc_estado", "")
 ]
 
-# Para facilitar futuras pestañas
 FIELD_GROUPS = [CAMPOS, QC_CAMPOS]
 
 def limpiar_campos():
@@ -71,7 +78,9 @@ def autocalcular_qc():
     """Calcula categoría y asignación en base a descripción."""
     desc = st.session_state.get("descripcion", "").strip()
     st.session_state["qc_categoria"] = "001" if desc else ""
-    st.session_state["qc_asignacion_clase"] = "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
+    st.session_state["qc_asignacion_clase"] = (
+        "ZMM_CLASS_MAT" if st.session_state["qc_categoria"] == "001" else ""
+    )
 
 def validar_solicitante():
     """Valida mínimos de la pestaña Solicitante."""
@@ -79,19 +88,28 @@ def validar_solicitante():
     return not any((v == "" or v == 0.0) for k, v in campos_solicitante.items() if k != "fecha")
 
 def guardar_solicitud():
-    """Guarda la solicitud consolidando todas las pestañas."""
+    """Guarda la solicitud consolidando todas las pestañas.
+       No limpia aquí para evitar errores de estado dentro del submit."""
     autocalcular_qc()
     if not validar_solicitante():
         st.warning("Favor complete todos los campos de la pestaña Solicitante.")
         return
     payload = recolectar_payload()
     st.session_state.materiales.append(payload)
-    st.success("Datos guardados.")
-    limpiar_campos()
+    # Programar limpieza y mostrar mensaje en el próximo run
+    st.session_state._flash = "Datos guardados."
+    st.session_state._pending_reset = True
     st.experimental_rerun()
 
-if "materiales" not in st.session_state:
-    st.session_state.materiales = []
+# --------- Ejecutar limpieza si quedó pendiente de un submit previo ----------
+if st.session_state._pending_reset:
+    limpiar_campos()
+    st.session_state._pending_reset = False
+
+# --------- Mostrar mensaje 'flash' si existe ----------
+if st.session_state._flash:
+    st.success(st.session_state._flash)
+    st.session_state._flash = None
 
 # ----------------------------- UI ------------------------------
 tabs = st.tabs([
@@ -171,18 +189,17 @@ with tabs[0]:
         if enviado:
             guardar_solicitud()
         if reestablecer:
-            limpiar_campos()
+            st.session_state._pending_reset = True
             st.experimental_rerun()
 
 # ---------- TAB 2: Gestión de la Calidad ----------
 with tabs[1]:
     st.subheader("Gestión de la Calidad")
 
-    # Form de la pestaña Calidad (con botones propios)
-    with st.form("form_calidad", clear_on_submit=False):
-        # Autocálculo en tiempo real según descripción
-        autocalcular_qc()
+    # Autocálculo en tiempo real según descripción
+    autocalcular_qc()
 
+    with st.form("form_calidad", clear_on_submit=False):
         c1, c2 = st.columns(2)
         with c1:
             st.text_input("Categoría (auto)", key="qc_categoria", disabled=True)
@@ -198,7 +215,7 @@ with tabs[1]:
         if enviado_qc:
             guardar_solicitud()
         if reestablecer_qc:
-            limpiar_campos()
+            st.session_state._pending_reset = True
             st.experimental_rerun()
 
 # ---------- Tabla y descarga ----------
@@ -216,3 +233,4 @@ if st.session_state.materiales:
         file_name="solicitudes_materiales.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
